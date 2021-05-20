@@ -1,5 +1,6 @@
 # Import packages
 import numpy as np
+from matplotlib import cm
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
@@ -18,13 +19,13 @@ def ackley(X, Y):
 def plot_ackley (X, Y, Z):
     fig = plt.figure()
     ax = fig.gca(projection='3d')
-    ax.plot_surface(X, Y, Z, cmap='jet')
+    ax.plot_surface(X, Y, Z, cmap=cm.coolwarm)
     plt.show()
 
 # Define plotting ackley contour
 def plot_ackley_contour (X, Y, Z):
     ax = plt.axes()
-    ax.contour(X, Y, Z)
+    ax.contour(X, Y, Z, cmap=cm.coolwarm)
 
 # Calculate ackley scalar value
 def ackley_scalar (x, y):
@@ -33,15 +34,21 @@ def ackley_scalar (x, y):
 
     return -20 * np.exp(factor_1) - np.exp(factor_2) + np.exp(1) + 20
 
+# Calculate gradient of ackley function
+def ackley_gradient (x, y, h):
+    dfdx = (ackley_scalar(x + h, y) - ackley_scalar(x, y)) / h
+    dfdy = (ackley_scalar(x, y + h) - ackley_scalar(x, y)) / h
+    return np.array([dfdx, dfdy])
+
 # Find minimum using Hook-Jeeves algorithm
-def hooke_jeeves (SP, step_length, tolerance, step_factor):
+def hooke_jeeves (start_point, step_length, tolerance, step_factor):
     B_x = [[1,0],[-1,0],[0,0]]
     B_y = [[0,1],[0,-1],[0,0]] 
-    best_coord = SP
-    best_value = ackley_scalar(SP[0], SP[1])
+    best_coord = start_point
+    best_value = ackley_scalar(start_point[0], start_point[1])
     temp_coord = best_coord
     temp_value = best_value
-    i = 0
+    iter = 0
     
     while step_length >= tolerance:
 
@@ -68,7 +75,7 @@ def hooke_jeeves (SP, step_length, tolerance, step_factor):
             best_value = temp_value
             temp_coord = best_coord[0] + slope_vector[0], best_coord[1] + slope_vector[1]
             temp_value = ackley_scalar(temp_coord[0], temp_coord[1])
-            i += 1
+            iter += 1
 
         # Reduct step length
         step_length *= step_factor
@@ -76,7 +83,31 @@ def hooke_jeeves (SP, step_length, tolerance, step_factor):
     return {
         'best_coord': best_coord,
         'best_value': best_value,
-        'iterations': i,
+        'iterations': iter,
+    }
+
+# Find minimum using Gradient Descent algorithm
+def grad_descent(start_point, tolerance, step_factor, max_iter, h):
+    prev_step = start_point - tolerance
+    step = start_point
+    iter = 0
+
+    while iter < max_iter:
+        if (tolerance > np.linalg.norm(step - prev_step)):
+            break
+
+        prev_step = step.copy()
+        
+        vector = - step_factor * ackley_gradient(step[0], step[1], h)
+        step += vector
+
+        iter += 1
+
+    return {
+        'best_coord': step,
+        'best_value': ackley_scalar(step[0], step[1]),
+        'iterations': iter,
+        'max_iter_r': (False, True)[iter == max_iter]
     }
 
 # Prepare range
@@ -93,11 +124,19 @@ plot_ackley(X, Y, Z)
 plot_ackley_contour(X, Y, Z)
 
 # Init variables for searching minimum
-SP = (35,-32)           # Starting position 
-SL = 6.5                # Initial step length
-E = 0.1                 # Tolerance, minimum step length
-SF = 0.5                # Step factor, step length reduction 
+SP = np.array([35.0,-32.0])     # Starting position 
+SL = 6.5                        # Initial step length
+E = 0.01                        # Tolerance, minimum step length
+SF = 0.3                        # Step factor, step length reduction 
 
 # Run Hook-Jeeves algorithm
 result = hooke_jeeves(SP, SL, E, SF)
-print(result)
+print(f"Found minimum at {result['best_coord']} with value: {result['best_value']}, it took {result['iterations']} iterations.")
+
+# cont. Init variables for searching minimum
+h = 0.00001                       # Derivative distance factor 
+MI = 600                        # Maximum allowed iterations (GD)
+
+# Run Gradient Descent algorithm
+result = grad_descent(SP, E, SF, MI, h)
+print(f"Found minimum at {result['best_coord']} with value: {result['best_value']}, it took {result['iterations']} iterations. ", ('','Maximum iterations reached')[result['max_iter_r']])
