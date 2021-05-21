@@ -1,4 +1,4 @@
-# Opimization of ackly's function
+# Opimization of ackley's function
 
 ## Prerequisites
   1. Python 3
