@@ -2,9 +2,12 @@
 import numpy as np
 
 from ackley import *
+
 from hooke_jeeves import Hooke_jeeves
 from gradient_descent import Gradient_descent
 from genetic_algorithm import Genetic_algorithm
+
+from simulator import Simulator
 
 # Prepare range
 wek_x = np.arange(-35,36,1)
@@ -19,33 +22,50 @@ plot_ackley(X, Y, Z)
 
 plot_ackley_contour(X, Y, Z)
 
-# Init variables for searching minimum
-SP = np.array([35.0,-32.0])     # Starting position 
-SL = 6.5                        # Initial step length
-E = 0.01                        # Tolerance, minimum step length
-SF = 0.3                        # Step factor, step length reduction 
+# Generate seed
+seed = Simulator([None, None], init_children_n=20).seed
 
-# Run Hook-Jeeves algorithm
-model = Hooke_jeeves(SP, SL, E, SF)
-result = model.exec()
-print(f"Using Hooke-Jeeves algorithm found minimum at {result['best_coord']} with value: {result['best_value']}, it took {result['iterations']} iterations.")
+# Test Hooke-Jeeves algorithm
+scenarios = [
+    [0.1, 0.005, 0.1], [0.1, 0.005, 0.4], [0.1, 0.005, 0.9],
+    [0.1, 0.5, 0.1], [0.1, 0.5, 0.4], [0.1, 0.5, 0.9],
+    [0.5, 0.005, 0.1], [0.5, 0.005, 0.4], [0.5, 0.005, 0.9],
+    [0.5, 0.5, 0.1], [0.5, 0.5, 0.4], [0.5, 0.5, 0.9],
+    [1, 0.500, 0.1], [1, 0.005, 0.4], [1, 0.005, 0.9],
+    [1, 0.5, 0.1], [1, 0.5, 0.4], [1, 0.5, 0.9],
+    [10, 0.005, 0.1], [10, 0.005, 0.4], [10, 0.005, 0.9],
+    [10, 0.5, 0.1], [10, 0.5, 0.4], [10, 0.5, 0.9],
+]
 
-# cont. Init variables for searching minimum
-h = 0.00001                     # Derivative distance factor 
-MI = 600                        # Maximum allowed iterations (GD)
+for i, s in enumerate(scenarios):
+    simulation = Simulator([Hooke_jeeves, None, *s], seed=seed)
+    simulation.run()
+    print("Scenario " + str(i + 1), simulation.process_results())
 
-# Run Gradient Descent algorithm
-model = Gradient_descent(SP, E, SF, MI, h)
-result = model.exec()
-print(f"Using Gradient Descent algorithm found minimum at {result['best_coord']} with value: {result['best_value']}, it took {result['iterations']} iterations. ", ('','Maximum iterations reached')[result['max_iter_r']])
+# Test Gradient Descent algorithm
+scenarios = [
+    [1, 0.1], [1, 0.3], [1, 0.5], [1, 0.7], [1, 0.9], 
+    [0.5, 0.1], [0.5, 0.3], [0.5, 0.5], [0.5, 0.7], [0.5, 0.9],
+    [0.1, 0.1], [0.1, 0.3], [0.1, 0.5], [0.1, 0.7], [0.1, 0.9],
+    [0.05, 0.1], [0.05, 0.3], [0.05, 0.5], [0.05, 0.7], [0.05, 0.9],
+    [0.01, 0.1], [0.01, 0.3], [0.01, 0.5], [0.01, 0.7], [0.01, 0.9],
+    [0.005, 0.1], [0.005, 0.3], [0.005, 0.5], [0.005, 0.7], [0.005, 0.9]
+]
 
-# cont. Init variables for GA                                
-SPs = np.array([[35.0,-32.0],[-17.5,19.0],[-9.5,11.0],[-32.0,-21.0],[-7.5,-13.0],[28.0,11.5]])
-                                # Starting population
-BP = 0.2                        # Bastardness (mutation occure) probability
-N_GEN = 50                      # Number of generations to simulate
+for i, s in enumerate(scenarios):
+    simulation = Simulator([Gradient_descent, None, *s, 500, 0.1], seed=seed)
+    simulation.run()
+    print("Scenario " + str(i + 1), simulation.process_results())
 
-# Run Genetic Algorithm
-model = Genetic_algorithm(SPs, SF, 0.2, 50)
-result = model.exec()
-print(f"Using Genetic Algorithm found minimum at {result['best_coord']} with value: {result['best_value']}, it took {result['iterations']} iterations.")
+# Test Genetic Algorithm
+scenarios = [
+    [0.1, 0.1, 5], [0.1, 0.4, 5], [0.1, 0.8, 5], [0.4, 0.1, 5], [0.4, 0.4, 5], [0.4, 0.8, 5], [0.8, 0.1, 5], [0.8, 0.4, 5], [0.8, 0.8, 5], 
+    [0.1, 0.1, 10], [0.1, 0.4, 10], [0.1, 0.8, 10], [0.4, 0.1, 10], [0.4, 0.4, 10], [0.4, 0.8, 10], [0.8, 0.1, 10], [0.8, 0.4, 10], [0.8, 0.8, 10], 
+    [0.1, 0.1, 20], [0.1, 0.4, 20], [0.1, 0.8, 20], [0.4, 0.1, 20], [0.4, 0.4, 20], [0.4, 0.8, 20], [0.8, 0.1, 20], [0.8, 0.4, 20], [0.8, 0.8, 20], 
+    [0.1, 0.1, 50], [0.1, 0.4, 50], [0.1, 0.8, 50], [0.4, 0.1, 50], [0.4, 0.4, 50], [0.4, 0.8, 50], [0.8, 0.1, 50], [0.8, 0.4, 50], [0.8, 0.8, 50]
+]
+
+for i, s in enumerate(scenarios):
+    simulation = Simulator([Genetic_algorithm, None, *s], seed=seed, init_children_n=6)
+    simulation.run()
+    print("Scenario " + str(i + 1), simulation.process_results())
